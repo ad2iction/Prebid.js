@@ -1,7 +1,7 @@
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 import { getStorageManager } from '../src/storageManager.js';
-import { getWindowSelf, getWindowTop } from '../src/utils.js';
+import { deepAccess, getWindowSelf, getWindowTop } from '../src/utils.js';
 
 export const BIDDER_CODE = 'ad2iction';
 export const SUPPORTED_AD_TYPES = [BANNER];
@@ -26,6 +26,7 @@ export const spec = {
   isBidRequestValid: (bid) =>
     !!bid.params.id && typeof bid.params.id === 'string',
   buildRequests: (validBidRequests, bidderRequest) => {
+    const firstPartyData = deepAccess(bidderRequest, 'ortb2.site.ext.data');
     const ids = validBidRequests.map(bid => {
       return { bannerId: bid.params.id, bidId: bid.bidId };
     });
@@ -44,6 +45,7 @@ export const spec = {
       iso: navigator.browserLanguage ||
                       navigator.language,
       udid: udid || '',
+      tg: firstPartyData ? JSON.stringify(firstPartyData) : '',
       _: Math.round(new Date().getTime()),
     };
     return {
@@ -54,11 +56,10 @@ export const spec = {
     };
   },
   interpretResponse: (serverResponse, bidRequest) => {
-    if (!Array.isArray(serverResponse.body)) {
+    const bidResponses = serverResponse.body;
+    if (!Array.isArray(bidResponses)) {
       return [];
     }
-
-    const bidResponses = serverResponse.body;
 
     return bidResponses;
   },
